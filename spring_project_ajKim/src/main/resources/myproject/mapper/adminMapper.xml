@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 갑인 DAO 인터페이스의 이름을 가지고 온다. -->
+<mapper namespace="spring.mvc.myproject.persistence.AdminDAO">
+
+<!-- 관리자 로그인 처리  -->
+<select id="loginCheck" parameterType="java.util.Map" resultType="int">
+	SELECT COUNT(*) FROM adminMember_tbl WHERE admin_id=#{strId} AND pwd=#{strPwd}
+</select>
+
+<!-- 상품 갯수 구하기  -->
+<select id="getProductCnt" resultType="int">
+	SELECT COUNT(*) as cnt FROM product_tbl
+</select>
+
+<!-- // 상품 리스트 보기  -->
+<select id="getProductList" parameterType="java.util.Map" resultType="spring.mvc.myproject.vo.ArtboxProductVO" >
+<![CDATA[
+	SELECT * 
+		FROM (SELECT p_code, p_name, p_image, p_info, p_price, p_count, p_date, admin_id, rownum rNum 
+			FROM(SELECT * FROM product_tbl ORDER BY p_date DESC)) 
+			WHERE rNum >= #{start} AND rNum <= #{end}
+]]>
+</select>
+
+<!-- //  회원 수 구하기  -->
+<select id="getMemberCnt" resultType="int">
+	SELECT COUNT(*) as cnt FROM users
+</select>
+
+<!-- 회원 테이블 목록 보기  -->
+<select id="getArticleList" parameterType="java.util.Map" resultType="spring.mvc.myproject.vo.ArtboxMemberVO">
+<![CDATA[
+	SELECT * FROM (SELECT username, password, name, phone, email, reg_date, rownum rNum 
+	FROM( SELECT * FROM users ORDER BY reg_date DESC))
+	WHERE rNum >= #{start} AND rNum <= #{end}
+]]>
+</select>
+
+<!-- 상품등록하기 + 이미지 업로드  -->
+<insert id="insertProduct" parameterType="spring.mvc.myproject.vo.ArtboxProductVO">
+	INSERT INTO product_tbl(p_code,p_name,p_image,p_info,p_price, p_count,p_date,admin_id, category) 
+	VALUES(#{p_code},#{p_name},#{p_image, jdbcType=VARCHAR},#{p_info,jdbcType=VARCHAR},#{p_price},#{p_count},#{p_date},#{admin_id},#{category})
+</insert>
+
+<!-- 상품 수정하기  -->
+<update id="updateProduct" parameterType="spring.mvc.myproject.vo.ArtboxProductVO">
+	UPDATE product_tbl 
+	SET p_name=#{p_name}, p_image=#{p_image}, p_info=#{p_info}, p_price=#{p_price},p_count=#{p_count}, p_date=#{p_date} 
+	WHERE p_code=#{p_code}
+</update>
+
+<!-- 상품 삭제하기  -->
+<delete id="deleteProduct" parameterType="String">
+	DELETE FROM product_tbl WHERE p_code=#{p_code}
+</delete>
+
+
+
+</mapper>

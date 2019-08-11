@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 갑인 DAO 인터페이스의 이름을 가지고 온다. -->
+<mapper namespace="spring.mvc.myproject.persistence.DAO">
+
+<!-- // 비밀번호갖고오기 처리  -->
+<select id="getPwd" parameterType="java.util.Map" resultType="String">
+	SELECT password FROM users WHERE username=#{strId} 
+</select>
+
+<!-- // 로그인 처리  -->
+<select id="loginCheck" parameterType="java.util.Map" resultType="int">
+	SELECT COUNT(*) FROM users WHERE username=#{strId} AND password=#{strPwd}
+</select>
+
+<!-- // 이메일 인증 - auth 업데이트 (로그인시 필요) -->
+<select id="auth" parameterType="String" resultType="spring.mvc.myproject.vo.ArtboxMemberVO">
+	SELECT auth FROM users WHERE username=#{strId}
+</select>
+
+<!-- // 이메일 인증처리 !! (회원가입시) -->
+<update id="emailChk" parameterType="String">
+	UPDATE users SET auth=1, enabled=1 WHERE key=#{key}
+</update>
+
+<!-- // 이메일 인증처리 2 !! (회원가입시) - 권한 테이블 -->
+<insert id="emailChk2" parameterType="String">
+	INSERT INTO authorities(username, authority) VALUES(#{strId}, 'USER')
+</insert>
+
+<!-- // 회원가입 처리 -->
+<insert id="insertMember" parameterType="spring.mvc.myproject.vo.ArtboxMemberVO" >
+	INSERT INTO users(username,password,name,phone,email,reg_date,key) 
+		VALUES(#{username},#{password},#{name},#{phone},#{email},#{reg_date},#{key})
+</insert>
+
+<!-- //  회원가입 - 아이디 중복확인  -->
+<select id="idCheck" parameterType="String" resultType="int">
+	SELECT COUNT(*) FROM users WHERE username=#{strId}
+</select>
+
+<!-- // 게시글  글 갯수 구하기  -->
+<select id="getArticleCnt" resultType="int">
+	SELECT COUNT(*) as cnt FROM board_tbl
+	
+	<if test="category == 'writer' and input != ''">
+		WHERE writer like '%'||#{input}||'%'
+	</if>
+	<if test="category == 'subject' and input != ''">
+		WHERE subject like '%'||#{input}||'%'
+	</if>
+	
+</select>
+
+<!-- // 게시글 목록 조회 -->
+<select id="getArticleList" parameterType="java.util.Map" resultType="spring.mvc.myproject.vo.ArtboxBoardVO">
+	SELECT * 
+		FROM (SELECT num,writer,pwd,subject,content, readCnt, ref, ref_step, ref_level, reg_date, ip, rownum rNum 
+			FROM(SELECT * FROM board_tbl 
+			
+			<if test="category == 'writer' and input != ''">
+				WHERE writer like '%'||#{input}||'%'
+			</if>
+			<if test="category == 'subject' and input != ''">
+				WHERE subject like '%'||#{input}||'%'
+			</if>
+			
+			ORDER BY ref DESC, ref_step ASC ))
+	<![CDATA[
+			WHERE rNum >= #{start} AND rNum <= #{end}
+	]]>	
+</select>
+
+<!-- // 게시판 조회 수 증가시키기  -->
+<update id="addReadCnt" parameterType="int">
+	UPDATE board_tbl SET readCnt = readCnt+1 WHERE num=#{num}
+</update>
+
+<!--  게시글 상세 내용 보기 , 게시글 수정 시 보여지는 상세페이지 -->
+<select id="getArticle" resultType="spring.mvc.myproject.vo.ArtboxBoardVO" parameterType="int">
+	SELECT * FROM board_tbl WHERE num = #{num}
+</select>
+
+<!-- // 게시글 수정, 게시글 삭제 - 비밀번호 확인하기  -->
+<select id="numPwdCheck" resultType="int" parameterType="java.util.Map">
+	SELECT COUNT(*) FROM board_tbl WHERE num=#{num} AND pwd=#{pwd}
+</select>
+
+<!-- // 게시글 수정 처리  -->
+<update id="updateBoard" parameterType="spring.mvc.myproject.vo.ArtboxBoardVO">
+	UPDATE board_tbl SET subject=#{subject} , content=#{content} WHERE num=#{num}
+</update>
+
+<!-- 1. 답변글이 아닌 경우(새로운 글쓰기인 경우 == 제목글인 경우)  -->
+<select id="getMaxNum" resultType="int">
+	SELECT MAX(num) as maxNum FROM board_tbl
+</select>
+
+<!-- 2.-답변글인 경우 -->
+<update id="updateReply" parameterType="spring.mvc.myproject.vo.ArtboxBoardVO">
+<![CDATA[
+	UPDATE board_tbl SET ref_step = ref_step + 1 WHERE ref=#{ref} AND ref_step > #{ref_step}
+]]>
+</update>
+
+<!-- 기존.글쓰기 처리  -->
+<insert id="insertBoard" parameterType="spring.mvc.myproject.vo.ArtboxBoardVO">
+	INSERT INTO board_tbl (num, writer, pwd, subject, content, readCnt, ref, ref_step, ref_level, reg_date, ip)
+	VALUES(board_seq.nextval, #{writer}, #{pwd}, #{subject}, #{content}, 0, #{ref}, #{ref_step}, #{ref_level}, #{reg_date}, #{ip})
+</insert>
+
+<!-- 글삭제처리  -->
+<!-- 1. 상세페이지 조회  -->
+<!-- 2. 답글이 존재하는지 여부  - 삭제의 추가 1  -->
+<select id="checkReply" parameterType="spring.mvc.myproject.vo.ArtboxBoardVO" resultType="int">
+<![CDATA[
+	SELECT COUNT(*) FROM board_tbl 
+	WHERE ref =#{ref} 
+		AND ref_step=#{ref_step}+1 
+		AND ref_level > #{ref_level}
+]]>
+</select>
+<!-- 3-1. 답글이 존재하는 경우 전체 삭제 -->
+<delete id="deleteAll" parameterType="spring.mvc.myproject.vo.ArtboxBoardVO">
+<![CDATA[
+	DELETE FROM board_tbl WHERE num=#{num} OR (ref=#{ref} AND ref_level > #{ref_level})
+]]>
+</delete>
+
+<!-- 4. 글삭제 처리  -->
+<delete id="deleteBoard" parameterType="int">
+	DELETE board_tbl WHERE num=#{num}
+</delete>
+
+<!--  // 회원 정보 가지고 오기 (보여주기)  -->
+<select id="getMemberInfo" resultType="spring.mvc.myproject.vo.ArtboxMemberVO" parameterType="String">
+	SELECT * FROM users WHERE username=#{strId}
+</select>
+
+<!-- // 회원 정보 수정 처리 -->
+<update id="updateMember" parameterType="spring.mvc.myproject.vo.ArtboxMemberVO">
+	UPDATE users SET password=#{password}, name=#{name}, phone=#{phone}, email=#{email} WHERE username=#{username}
+</update>
+
+<!-- // 회원정보 삭제 -->
+<delete id="deleteMember" parameterType="String">
+	DELETE FROM users WHERE username=#{username}
+</delete>
+
+<!-- 아이디 찾기  -->
+<select id="getFindId" parameterType="java.util.Map" resultType="String">
+    SELECT username FROM users WHERE name=#{name} AND email=#{mail}
+</select>
+
+<!--  // 비밀번호 이메일 인증 전 확인  -->
+<select id="idEmailChk" resultType="int" parameterType="java.util.Map">
+	select count(*) as cnt from users where username=#{username} and email=#{email}
+</select>
+
+<!-- 이메일보내면서 키값 변경  -->
+<update id="updateKey" parameterType="spring.mvc.myproject.vo.ArtboxMemberVO">
+	update users set key=#{key} where email=#{email}
+</update>
+
+<!-- 변경된 키값 비교  -->
+<select id="equalsKey" resultType="spring.mvc.myproject.vo.ArtboxMemberVO">
+	SELECT key FROM users WHERE username=#{username}
+</select>
+
+<!-- 비밀번호만 변경 -->
+<update id="pwdModify" parameterType="spring.mvc.myproject.vo.ArtboxMemberVO">
+	update users set password=#{password} where username=#{username}
+</update>
+
+</mapper>

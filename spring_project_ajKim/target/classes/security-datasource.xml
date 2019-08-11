@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+
+	<!-- ★ Mybatis 설정 시작  -->
+	<bean name="dataSource" class="org.springframework.jndi.JndiObjectFactoryBean">
+		<property name="jndiName" value="java:comp/env/jdbc/Oracle11g_pj" />
+	
+		<!-- DAOImpl에 이것과 동일 
+		Context con = new InitialContext();	 //server > context.xml 커넥션풀에 저장된 name를 검색해 오기위해서 사용 
+		d_source = (DataSource)con.lookup("java:comp/env/jdbc/Oracle11g");	-->
+		
+		<property name="resourceRef" value="true" />
+	</bean>
+
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean" >
+		<property name="dataSource" ref="dataSource" />		
+		<!-- <property name="mapperLocations" value="classpath:board_mybatis/mapper/**/*.xml" />  : mapper는 안만들겠따.-->
+		<!-- 위 경로가(classpath:) 틀리면 db 접근을 못함  -->
+	</bean>
+	
+	<bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg ref="sqlSessionFactory" />
+	</bean>
+	<!-- Mybatis 설정 종료  -->
+
+
+
+</beans>

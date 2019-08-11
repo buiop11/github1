@@ -1,0 +1,172 @@
+@charset "UTF-8";
+
+
+    /*------------- 헤더 시작!!!!!!!!!!!!! -------------  */
+header li {
+    list-style: none;
+}
+.mainCategory {
+    float: left;
+}
+header .lnb {
+    height: 57px;
+    border-bottom: 1px solid #cccccc;
+}
+    
+header .logo { /* 메인 ARTBOX 로고  */
+    width: 260px;
+    height: 46px;
+    line-height: 100px;
+    margin: 60px auto;
+    text-align: center;
+}
+    
+.mainCategory a { /* 메인 카테고리 보여주기 ex) 인형토이... */
+    text-decoration: none;
+    margin: 15px 35px 0 0;
+}
+.box-search{
+    width: 185px;
+}
+.mainCategory_search{float: right;}
+.mainCategory_search a{
+    width: 150px;
+    height: 40px;
+}
+.mainCategory_search input#search {
+    background-color: rightgrey;
+    border: 1px;
+    padding: 0;
+    margin: 0;
+    width: 145px;
+    height: 35px;
+    line-height: 35px;
+    vertical-align: top;
+    font-size: 16px;
+    color: #000000;
+    border-bottom: 2px solid #787878;
+}
+.mainCategory_search input#searchIcon{
+	 float:right;
+	background-image: url('/myproject/resources/images/top_icon_search.png');
+	background-position:  0px 0px; 
+    background-repeat: no-repeat;
+    width: 40px;
+    height: 40px;
+    border: 0px;
+    background-color:white;
+ 	/* cursor:pointer;
+ 	outline: 0;  */
+ 	display:inline;
+	}
+
+
+.mainCategory_login {float: right;}
+.mainCategory_login a{margin-right: 3px; display:block; positon:relative;}
+#top_login {						/* 이거 위치 조정이 안됨 ㅠㅠㅠㅠㅠㅠ - 나중에 해보기  */
+	position: absolute;
+    z-index: 3;
+    top: 130px;
+    width: 69px;
+    height: 34px;
+}
+.mainCategory_cart{float: right;}
+.mainCategory_cart a{margin-right: 3px;}
+/*------------- 헤더 끝!!!!!!!!!!!!! -------------  */
+
+a{text-decoration: none; color:black;}
+
+/* ----------------------- footer --------------------- */
+
+footer {
+    width:1200px;
+    height: 200px;
+    margin : 0 auto;
+}
+
+.office_logo {width:1200px; height: 70px; padding-top:20px;}
+
+.office_logo ul .FooterLink{
+     float:left;
+     list-style : none;
+     line-height: 30px;
+     margin : 0 20px 0 0;
+     font-size: 13px;
+}
+.family_site {
+    float: right;
+    margin: 0;
+    width: 150px;
+    list-style: none;
+}
+.facebook {
+    float: right;
+    margin: 0 12px 0 0;
+    list-style: none;
+}
+.instagram {
+    float: right;
+    margin: 0 12px 0 0;
+    list-style: none;
+}
+hr {width: 100%;}
+
+.CustomerSeivce{width:1200px; height: 200px;}
+
+.CustomerSeivce ul li {
+     float:left;
+     display: inline-block;
+     list-style : none;
+  
+}
+.callCenter {
+    width: 300px;
+    font-size: 13px;
+    line-height: 13px;
+    margin-right: 15px;
+}
+.callCenter b.string {
+    display: block;
+    font-weight: bold;
+    font-size: 24px;
+    line-height: 24px;
+    color: #000000;
+    padding-bottom: 5px;
+}
+.callCenter b.number {
+    display: block;
+    font-family: 'Saira Condensed';
+    font-size: 37px;
+    line-height: 37px;
+    color: #000000;
+    padding-bottom: 10px;
+}
+.twoButton {width:280px; height:auto;}
+
+.twoButton a{
+    display: inline;
+    width: 115px;
+    height: 115px;
+    border: 3px solid #cecece;
+    margin: 0 13px 0 5px;
+    font-size: 13px;
+    line-height: 13px;
+    text-align: center;
+    border-radius: 8px;
+    float: left;
+}
+
+.twoButton img {
+    display: block;
+    margin: 20px auto 5px;
+    width: 50px;
+    height: 50px;
+}
+
+.information {
+    margin-left: 40px;
+    width: 480px;
+    font-size: 11px;
+    line-height: 20px;
+}
+ 

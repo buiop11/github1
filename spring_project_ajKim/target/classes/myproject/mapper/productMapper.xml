@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 갑인 DAO 인터페이스의 이름을 가지고 온다. -->
+<mapper namespace="spring.mvc.myproject.persistence.ProductDAO">
+
+<!-- // 상품리스트 카테고리별 갯수 구하기 (코드별로 - 공통페이지에 코드별로 출력할거) -->
+<select id="getProductListCnt" resultType="int">
+	SELECT COUNT(*) as cnt FROM product_tbl WHERE category=#{category}	
+</select>
+
+<!-- 검색 상품 확인하기 -->
+<select id="getSearchProduct" resultType="int">
+	SELECT COUNT(*) as cnt FROM product_tbl WHERE p_name like '%'||#{input}||'%'	
+</select>
+
+<!-- // 토이 - 상품리스트 출력하기!!!!! -->
+<select id="getProductList" resultType="spring.mvc.myproject.vo.ArtboxProductVO" parameterType="java.util.Map">
+<![CDATA[
+	SELECT * FROM (SELECT category, p_code,p_name, p_image, p_info, p_price, p_count, p_date, admin_id, rownum rNum 
+		FROM(SELECT * FROM product_tbl WHERE  category=#{category} ORDER BY p_date DESC)) 
+	WHERE rNum >=#{start} AND rNum <=#{end}
+]]>
+</select>
+
+<!-- 검색 상품 출력 -->
+<select id="getSearchList" resultType="spring.mvc.myproject.vo.ArtboxProductVO" parameterType="java.util.Map">
+	SELECT * FROM (SELECT category, p_code,p_name, p_image, p_info, p_price, p_count, p_date, admin_id, rownum rNum 
+		FROM(SELECT * FROM product_tbl WHERE p_name like '%'||#{input}||'%' ORDER BY p_date DESC)) 
+<![CDATA[
+	WHERE rNum >=#{start} AND rNum <=#{end}
+]]>
+</select>
+
+<!-- // 상품 상세 내역보기 (p_code로) -->
+<select id="getProduct" resultType="spring.mvc.myproject.vo.ArtboxProductVO">
+	SELECT * FROM product_tbl WHERE p_code = #{p_code}
+</select>
+
+<!-- // 상품 장바구니 추가(카트)담기  -->
+<insert id="cartInsert" parameterType="spring.mvc.myproject.vo.ArtboxCartVO">
+	INSERT INTO cart_tbl(cartNum, id, p_code, p_name, p_image, c_count, c_price) 
+		VALUES(cart_seq.nextval,#{id},#{p_code},#{p_name},#{p_image}, #{c_count}, #{c_price})
+</insert>
+
+<!-- //  상품 주문 하기 처리 페이지 insert  + 주문 로그- 테이블에도 함께 넣어야함 (프로시져) -->
+<insert id="insertOrder" statementType="CALLABLE" parameterType="spring.mvc.myproject.vo.ArtboxOrderVO">
+	{
+        call order_table_add(#{id}, #{p_code}, #{p_name}, #{p_image}, #{o_name}, #{o_phone}, #{o_price}, #{address}, #{o_count})
+    }
+</insert>
+
+<!-- // 주문 로그 테이블 - 추가1 (오더넘버 가장 높은 값 가져오기) -->
+<select id="getMaxOrderNum" resultType="int">
+	SELECT MAX(o_num) as num FROM order_tbl
+</select>
+
+<!-- // 주문 로그테이블 - 추가2(주문 신규삽입시 최대값 가져온거로) insert // o_date 대신에 r_date 있음-->
+<insert id="updateOrderLog" parameterType="spring.mvc.myproject.vo.ArtboxOrderVO">
+	INSERT INTO orderLog_tbl(log_num,o_num,id,p_code,p_name,p_image,o_name,o_phone,o_count,o_price,address, o_date, r_date, state, admin_id) 
+		VALUES(orderLog_seq.nextval,#{o_num},#{id},#{p_code},#{p_name},#{p_image},#{o_name},#{o_phone},#{o_count},#{o_price},#{address},#{o_date}, #{r_date},#{state},#{admin_id})
+</insert>
+
+<!-- // 주문 로그테이블 - 업데이트이기 때문에 환불날짜도 있음! -->
+<insert id="insertLogOrder" parameterType="spring.mvc.myproject.vo.ArtboxOrderVO">
+	INSERT INTO orderLog_tbl(log_num,o_num,id,p_code,p_name,p_image,o_name,o_phone,o_count,o_price,address,o_date,r_date,state,admin_id) 
+    	VALUES(orderLog_seq.nextval,#{o_num},#{id},#{p_code},#{p_name},#{p_image},#{o_name},#{o_phone},#{o_count},#{o_price},#{address},#{o_date,jdbcType=TIMESTAMP},#{r_date,jdbcType=TIMESTAMP},#{state},#{admin_id,jdbcType=VARCHAR})
+</insert>
+
+<!-- // 고객별 주문 갯수 확인  -->
+<select id="getC_orderCnt" resultType="int" parameterType="String">
+	SELECT COUNT(*) as cnt FROM order_tbl WHERE id=#{id}
+</select>
+
+<!-- // 고객별 주문 리스트 확인 -->
+<select id="getC_orderList" resultType="spring.mvc.myproject.vo.ArtboxOrderVO">
+<![CDATA[
+	SELECT * FROM (SELECT o_num,id, p_code,p_name,p_image,o_name,o_phone,o_count,o_price,address,o_date,r_date,state, admin_id, rownum rNum 
+		FROM( SELECT * FROM order_tbl WHERE id=#{strId} ORDER BY o_date DESC)) WHERE rNum >= #{start} AND rNum <= #{end}
+]]>		
+</select>
+
+<!--// 오더(주문테이블) 상태변경 - 프로시져, 로그테이블은 따로 만들어서 진행    -->
+<update id="updateState" statementType="CALLABLE" parameterType="java.util.Map">
+	{
+        call order_state_update(#{o_num},#{admin_id},#{state})
+    }
+</update>
+
+<!--// 취소완료 전용 수정처리!!! product_tbl 상품 복원 포함  -->
+<update id="cancleState" statementType="CALLABLE" parameterType="java.util.Map">
+	{
+        call order_cancle_update(#{o_num},#{admin_id},#{state},#{r_date})
+    }
+</update>
+
+<!-- // 장바구니 테이블 가지고오기  -->
+<select id="getCart" resultType="spring.mvc.myproject.vo.ArtboxCartVO" parameterType="String">
+	SELECT * FROM cart_tbl WHERE id=#{id, jdbcType=VARCHAR}
+</select>
+
+<!-- // 카트 삭제 처리 메소드  -->
+<delete id="deleteCart" parameterType="java.util.Map" >
+	DELETE cart_tbl WHERE id=#{id} AND cartNum=#{cartNum}
+</delete>
+
+<!-- // 주문 총 갯수 구하기!! (관리자용) -->
+<select id="getAllOrder" resultType="int">
+	SELECT COUNT(*) as cnt FROM order_tbl
+	
+			<where>
+			<if test="p_name != ''">
+				and p_name like '%'||#{p_name}||'%'
+			</if>
+			
+			<if test="id != ''">
+				and id like '%'||#{id}||'%'
+			</if>
+			
+			<if test="state == '결제요청' and state != ''">
+				and state = '결제요청'
+			</if>
+			
+			<if test= "state == '환불요청' and state != ''">
+				and state = '환불요청'
+			</if>
+			
+			<if test="state == '환불완료' and state != ''">
+				and state = '환불완료'
+			</if>
+			
+			<if test="state == '주문확정' and state != ''">
+				and state = '주문확정'
+			</if>
+		</where>
+	
+</select>
+
+<!-- // 주문 전체 가지고 오기 (총 수)(관리자용)  -->
+<select id="getOrderAllList" parameterType="java.util.Map" resultType="spring.mvc.myproject.vo.ArtboxOrderVO">
+	SELECT *FROM (SELECT o_num,id,p_code,p_name,p_image,o_name,o_phone,o_count,o_price,address,o_date,r_date,state, admin_id, rownum rNum 
+		FROM( SELECT * FROM order_tbl 
+		<where>
+			<if test="p_name != ''">
+				and p_name like '%'||#{p_name}||'%'
+			</if>
+			
+			<if test="id != ''">
+				and id like '%'||#{id}||'%'
+			</if>
+			
+			<if test="state == '결제요청' and state != ''">
+				and state = '결제요청'
+			</if>
+			
+			<if test= "state == '환불요청' and state != ''">
+				and state = '환불요청'
+			</if>
+			
+			<if test="state == '환불완료' and state != ''">
+				and state = '환불완료'
+			</if>
+			
+			<if test="state == '주문확정' and state != ''">
+				and state = '주문확정'
+			</if>
+		</where>
+		ORDER BY o_date DESC)) 
+<![CDATA[
+		WHERE rNum >= #{start} AND rNum <= #{end}
+]]>		
+</select>
+
+<!-- // 결산 총 금액 구하기 -->
+<select id="getTotalSale" resultType="int">
+	SELECT SUM(o_price) FROM order_tbl WHERE state='주문확정'
+</select>
+
+<!-- // 달별 총 합계 그래프 (chart1) --> <!-- ★ ★ ★ ★ ★ ★ ★ ★  에러다!!!!!!!!!!!!! ★ ★ ★ ★ ★ -->
+<select id="getChart" resultType="java.util.Map">
+	SELECT date2, SUM(o_price) AS sum FROM (SELECT (TO_CHAR(o_date,'yymm')) AS date2, o_price 
+	 FROM order_tbl WHERE state='주문확정') GROUP BY date2 ORDER BY date2 ASC
+</select>
+
+<!-- // 원하는 달별 카테고리 차트 가져오기 (chart2) -->
+<select id="getCategory" parameterType="java.util.Map" resultType="java.util.Map">
+	SELECT code2, SUM(o_price) AS sum_p 
+	 FROM(SELECT SUBSTR(p_code, 1,1) AS code2, o_price 
+	 	FROM order_tbl WHERE (TO_CHAR(o_date,'yymm'))= #{datell, jdbcType=VARCHAR} AND state='주문확정') GROUP BY code2
+</select>
+
+
+</mapper>
